@@ -1,0 +1,8 @@
+# corpus data never ships (proprietary FortiNet docs + vector stores)
+**/kb/
+**/text/
+**/field/
+**/chunks/
+__pycache__/
+*.log
+.DS_Store
