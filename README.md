@@ -4,8 +4,8 @@ A Hermes Agent skill family covering FortiNet products (FortiOS/FortiGate first 
 built as **two-axis model**:
 
 - **SURFACES** (physical axis): product × version line, each with its own documentation
-  collection. Current: `fortios-7.6x` (FortiOS 7.6.0–7.6.8 + FortiGate 6000/7000F
-  admin guides, ~75k chunks).
+  collection. Current: `fortios-7.6x` (FortiOS 7.6.0–7.6.8, 43,528 vectors) and
+  `fortios-8.0x` (FortiOS 8.0.0–8.0.2, 25 docs, 37,220 vectors).
 - **PIECES** (logical axis): 12 knowledge domains — `platform`, `policy`, `vpn`,
   `sdpwan`, `ha`, `wireless`, `proxy-ztna-casb`, `dlp`, `logging`, `auth`, `hardware`,
   `ops`. Each piece is an independently updatable Hermes skill with CLI-verified content.
@@ -34,7 +34,8 @@ answer (skill core + retrieved context, both cited)
 skills/router/.../SKILL.md   router skill — routing table, runbook, exam state
 skills/pieces/fortinet-*/    12 piece skills (SKILL.md each)
 scripts/                     pipeline + eval scripts (see table below)
-eval/questions.jsonl         92-question exam, piece-tagged, keypoint-graded
+eval/questions.jsonl         92-question 7.6x exam, piece-tagged, keypoint-graded
+eval/fortios-8.0x/           12-question 8.0x exam (platform/hardware/policy slices)
 PIPELINE.md                  corpus build pipeline (fetch -> extract -> embed -> compile)
 CORPUS.md                    surface conventions + self-improvement/update procedure
 ```

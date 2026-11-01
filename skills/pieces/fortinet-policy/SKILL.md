@@ -1,6 +1,6 @@
 ---
 name: fortinet-policy
-version: 1.0.0
+version: 1.1.0
 author: ChrisMok, Hermes Agent
 license: MIT
 description: "FortiNet policy: firewall policy, NAT, CGNAT, carrier"
@@ -71,11 +71,13 @@ end
 
 ## FortiOS Carrier edition
 
-FortiOS-Carrier-767.pdf in the surface `pdfs/` — carrier-specific features (CGNAT at scale, NAT64, per-subscriber accounting hooks). Version-check before citing for standard FortiOS.
+- `FortiOS-Carrier-767.pdf` in `fortios-7.6x/pdfs/` — 7.6.x carrier features (CGNAT at scale, NAT64, per-subscriber accounting hooks).
+- **FortiOS Carrier 8.0.2** (`fortios-8.0x/text/FortiOS-Carrier-802.txt`, verified): **Carrier-grade GTP firewall** — protection for GTPv0 / GTPv1 / GTPv1-C / GTPv1-U / GTPv2 (GTPv2-C) / GTP' (GTP prime) across GTPv1 and GTPv2 (evolving packet core) networks; **GTP + PFCP protection**; **GTP stateful inspection**; monitoring (GTP activity, GTP signaling dashboard). **FGSP sync extensions (8.0.0):** selectively synchronize ONLY S10 GTP tunnels; disable IP session sync and sync only GTP tunnels.
+- Version-check before citing for standard (non-Carrier) FortiOS.
 
 ## Retrieval
 
-Root index with filter: `query_root.py "<q>" 12 --product fortios --line 7.6x` (runbook in the router skill `hermes-it-infosec-fw-fortig-fortios-7-6-7`). Per-surface hybrid query: `fortinet-corpus/fortios-7.6x/scripts/query.py`. Version-check hits (surface contains 8.0.x docs too).
+Root index with filter (pass the right line): `query_root.py "<q>" 12 --product fortios --line 7.6x` (7.6.x) or `--line 8.0x` (8.0.x) (runbook in the router skill `hermes-it-infosec-fw-fortig-fortios-7-6-7`). Per-surface hybrid query: `fortinet-corpus/fortios-7.6x/scripts/query.py` / `fortinet-corpus/fortios-8.0x/scripts/query.py`. Surfaces are version-isolated; sanity-check the `version` field on hits.
 
 ## Piece card / exam
 

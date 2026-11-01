@@ -1,6 +1,6 @@
 ---
 name: fortinet-hardware
-version: 1.0.0
+version: 1.1.0
 author: ChrisMok, Hermes Agent
 license: MIT
 description: "FortiNet hardware: hyperscale FG, NPU, PPP pipeline"
@@ -29,10 +29,11 @@ Hyperscale FortiGate (FG-6000F/7000E/7000F), NPU (ASIC) offload, PPP pipeline, h
 - **NPU HPE monitoring (7.6.x):** `config monitoring npu-hpe` (CLI Ref p1009) + `diagnose npu np7 hpe monitor` — per-NPU port HPE (hardware processing engine) stats.
 - **IPsec NPU offload:** `config vpn ipsec phase1-interface > set npu-offload [enable|disable]` (vpn piece) — verify with `diagnose npu port-list` + `diagnose vpn tunnel list` `npu_flag`.
 
-## NPU CLI objects (7.6.7/7.6.8, verified)
+## NPU CLI objects (7.6.7/7.6.8, verified) + 8.0.x hardware-acceleration doc (corpus `fortios-8.0x/`)
 
 The objects that manage the NPU (network processor) on models with NPUs:
 - `config system npu` — NPU attributes (7.6.8 CLI Ref p1793+; NP7 HPE). Verified fields: `set capwap-offload [enable|disable]`, `set dedicated-management-cpu [enable|disable]` + `set dedicated-management-affinity {string}`, `set default-qos-type [policing|shaping|...]`, `config congestion-handling-mode > set mode [flow-control|head-of-line]`, `config dos-options` (`set npu-dos-meter-mode [global|local]`, `set npu-dos-tpe-mode [enable|disable]`), `set double-level-mcast-offload [enable|disable]`, `config dsw-dts-profile`, `config dsw-queue-dts-profile` (per-iport/oport DTS queues), `set napi-break-interval {integer}`, `set npu-group-index {integer}`, `set fastpath [enable|disable]`, `config fp-anomaly` (per error type: `allow`/`drop`/`trap-to-host` for csum-err, land, frag, ipv4/ipv6 options...); 7.6.7: `set vlan-accounting disable`; 7.6.8: `set sctp-offload` + `set sctp-ctrlpkt-to-host`.
+- **8.0.x hardware-acceleration guide** (`fortios-hardware-acceleration-802.txt`): content processors **CP10 / CP9 / CP9XLite / CP9Lite** (CP10 ≈ 2× CP9 IPsec throughput, ≈6× rule DB); network processors NP7/NP7Lite/NP6/NP6XLite/NP6Lite; 8.0.x topics: **NP7 link-scan interval** (`config system npu set np-linkscan-interval`, 50-1000 ms, default 1000 — reduces FGCP HA failover delay), **IPsec over VNE interface** (NP7/NP7Lite, SOC5) with `ipsec-ob-np-sel {rr|packet|hash}` steering, **NP session offloading in HA active-active**, **NP HMAC check offloading**, **software-switch interfaces + NP processors**, **post-quantum readiness and NP processors**, **automatic NP7 egress shaping profile refresh** (`mcs-auto-start` auto-flush/reinstall of IPsec SAs).
 - `config system npu-post` — NPU port mapping (hw-acceleration doc p98; `diagnose npu port-list` shows the mapping).
 - `config system npu-setting prp` — 7.6.7 CLI Ref p1886 (NPU PRP settings).
 - `config system npu-vlink` — 7.6.7 CLI Ref p1887 (NP7 NPU VDOM links for inter-VDOM acceleration).
@@ -73,23 +74,26 @@ get system performance       # throughput, sessions, CPU
 - 8.0.0 supports FG-6000F/7000E/7000F (same hyperscale lineup as 7.6.x).
 - **NOT in the 7.6.7 list:** 100E, 1000E, 3000E, 4000E series (discontinued).
 
-## FortiGate 6000F (hyperscale) — verified management model (7.6.7)
+## FortiGate 6000F (hyperscale) — verified management model (7.6.7 + 8.0.x)
 
-Corpus doc: `text/fortigate-6000-767.txt` (FortiGate 6000F Administration, FortiOS 7.6.7, 01-767-465651-20260716).
+Corpus docs: `text/fortigate-6000-767.txt` (FortiOS 7.6.7) and `fortios-8.0x/text/fortigate-6000-802.txt` (FortiOS 8.0.2).
 - **FPC (FortiProcessor Card):** the 6000F is managed per-FPC — apply/activate/verify FPC subscription and perpetual licenses; manage individual management boards and FPCs; connect to individual FPC consoles/CLIs; determine the primary FPC; handle FPC failure; install firmware on an individual FPC.
 - **HA:** 6000F HA pairs two FortiGate-6000 units; the secondary unit's FPC CLIs are accessible separately (7.6.7 6000F guide).
+- **6000F 8.0.1 new (verified):** FGCP HA supports **high-memory-utilization failover protection**; updated primary-FortiGate-6000 selection procedures (with/without override).
 - **Physical / health verification (6000F guide, verified):** two 10/100/1000BASE-T out-of-band management interfaces **MGMT1 and MGMT2** (management-board GUI + CLI login, SNMP, remote logging — all other management traffic uses MGMT1) plus one front-panel 10G SFP+ **MGMT3**; front-panel 1/10G SFP+ **HA1/HA2** for heartbeat, session sync, and management. When operating normally the **back-panel PSU and fan try LEDs are all solid green**, and the front panel (including the alarm LED) shows the normal-operating LED pattern.
 - **NPU offload + virtual links:** see must-know (NP7 queues, sctp-offload, hpe monitor); `diagnose npu port-list` for the NPU port mapping.
 
-## FortiGate 7000F (hyperscale) — verified (7.6.7 Administration Guide)
+## FortiGate 7000F (hyperscale) — verified (7.6.7 + 8.0.2 Administration Guides)
 
-Corpus doc: `text/fortigate-7000F-767.txt`.
+Corpus docs: `text/fortigate-7000F-767.txt` (7.6.7) and `fortios-8.0x/text/fortigate-7000F-802.txt` (8.0.2).
+- **Chassis (8.0.2 verified):** **FortiGate 7121F** = 16U 19-inch rackmount **12-slot** chassis, **1Tbps fabric backplane**, 50Gbps base; managed by **two redundant System Management Modules (SMM 1/2)**; power via **eight hot-swappable 200-240 VAC PSUs** (gen-1/gen-2 chassis). A 7000F product = chassis (7121F or 7081F) + FIMs + FPMs in slots.
 - **Module-based architecture:** the 7000F chassis combines **FPM (FortiProcessor Modules)** and **FIM (FortiInterface Modules)**. **FIM-7941F** has configurable interface assignments (interfaces 1–18, M1, M2 reconfigurable; 19–20 separate) and **includes NP7 processors**; **FIM-7921F** (interfaces 1–8, M1, M2; 19–20).
 - **Hardware operations (all documented):** replacing a failed FPM or FIM — both in a **standalone** 7000F and in a 7000F chassis in an **HA cluster**; installing firmware on individual FIMs or FPMs; installing FIM/FPM firmware from the BIOS after a reboot; **formatting an FIM/FPM boot device and installing new firmware**.
+- FPM fast-path variants (8.0.2 docs): **FPM-7620E / FPM-7630E** fast path architecture sections (see also `fortigate-7000E-802.txt`).
 
 ## Retrieval
 
-Root index with filter: `query_root.py "<q>" 12 --product fortios --line 7.6x` (runbook in the router skill). Version-check hits (surface contains 8.0.x docs too).
+Root index with filter (pass the right line): `query_root.py "<q>" 12 --product fortios --line 7.6x` (7.6.x) or `--line 8.0x` (8.0.x) (runbook in the router skill). Surfaces are version-isolated; sanity-check the `version` field on hits.
 
 ## Piece card / exam
 

@@ -22,13 +22,15 @@ the 79MB model is downloaded once, not per query.
 import json, subprocess, urllib.request, sys, os, time
 
 CORPUS = '/home/chrismok/fortinet-corpus'
-SURFACE = os.path.join(CORPUS, 'fortios-7.6x')
+SURFACE = os.path.join(CORPUS, sys.argv[1] if len(sys.argv) > 1 else 'fortios-7.6x')
+PRODUCT, LINE, K = (sys.argv[2] if len(sys.argv) > 2 else 'fortios',
+                    sys.argv[3] if len(sys.argv) > 3 else '7.6x', 16)
+PRODUCT_NAME = sys.argv[4] if len(sys.argv) > 4 else 'FortiGate'
 SKILLS = os.path.expanduser('~/.hermes/skills')
 ROUTER = os.path.join(SKILLS, 'hermes-it-infosec-fw-fortig-fortios-7-6-7', 'SKILL.md')
 PIECE_DIR = os.path.join(SKILLS, 'fortinet')
 VLLM = 'http://localhost:8081/v1/chat/completions'
 ONNX_CACHE = os.path.expanduser('~/.cache/chroma-onnx')
-PRODUCT, LINE, K = 'fortios', '7.6x', 16
 
 PROMPT = """You are a Fortinet engineer specializing in FortiOS 7.6.x and 8.0.x, CLI and REST API v2.
 
@@ -101,10 +103,10 @@ def generate(q, context, skill, model, max_tokens=3000, retries=3):
 
 
 def main():
-    out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(SURFACE, 'eval', 'answers_root_r1.jsonl')
+    out = os.path.join(SURFACE, 'eval', f'answers_root_{LINE}.jsonl')
     qs = [json.loads(l) for l in open(os.path.join(SURFACE, 'eval', 'questions.jsonl'))]
-    if len(sys.argv) > 2:
-        want = set(sys.argv[2].split(','))
+    if len(sys.argv) > 5:
+        want = set(sys.argv[5].split(','))
         qs = [q for q in qs if q['id'] in want]
     pieces = sorted({q.get('piece') for q in qs})
     print(f'questions: {len(qs)}; pieces: {pieces}', flush=True)

@@ -46,8 +46,11 @@ def chat(model, prompt, max_tokens=1200, temp=0.0):
 
 
 def main():
+    global EV
     ap = sys.argv[1] if len(sys.argv) > 1 else os.path.join(EV, 'answers_root_r1.jsonl')
     sp = sys.argv[2] if len(sys.argv) > 2 else os.path.join(EV, 'scores_root_r1.jsonl')
+    if len(sys.argv) > 3:
+        EV = os.path.join(CORPUS, sys.argv[3], 'eval')
     req = urllib.request.Request('http://localhost:8081/v1/models')
     model = json.loads(urllib.request.urlopen(req).read())['data'][0]['id']
     qs = {json.loads(l)['id']: json.loads(l) for l in open(os.path.join(EV, 'questions.jsonl'))}

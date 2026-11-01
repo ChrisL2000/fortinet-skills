@@ -1,6 +1,6 @@
 ---
 name: fortinet-logging
-version: 1.0.0
+version: 1.1.0
 author: ChrisMok, Hermes Agent
 license: MIT
 description: "FortiNet logging: LOGID catalog, views, GenAI logs"
@@ -42,6 +42,12 @@ LOGID message catalog, log views, forwarding (Syslog/FortiAnalyzer), GenAI loggi
 - **FortiOS GenAI logging** (7.6.8 + 8.0.x): logs LLM/AI application usage (FortiGuard GenAI category) — policy hits for AI SaaS apps, token usage where visible. CLI: `config log genai` + policy `set genai-log [enable|disable]` (check 7.6.8 release notes for exact fields).
 - **FortiAnalyzer GenAI dashboard** (FortiAnalyzer 7.6.4+): dashboards for GenAI usage by app/user/policy.
 
+## FortiOS 8.0.2 Log Reference (corpus `fortios-8.0x/`, verified)
+
+- Corpus doc: `text/FortiOS_8.0.2_Log_Reference.txt` (2026-10-22) — the 8.0-line catalog. For "what is logid N on 8.0.x", use THIS file, not the 7.6.7 one.
+- **What's new (verified):** 8.0.2 vs 8.0.1: no major log changes; **field-level changes in traffic + app-ctrl logs: `appclassification` field ADDED, `appstatus` field REMOVED** (both log types). 8.0.1 vs 8.0.0: traffic-log field changes (see doc "What's new").
+- Catalog structure/encoding identical to 7.6.x (9-digit logid: 5-digit category + 4-digit subtype; per-category numeric ranges).
+
 ## LOGID encoding + catalog (verified)
 
 - LOGID is 9 digits: 5-digit category + 4-digit subtype. Example: `logid=0720018432` → category 072 (ATT&CK) + subtype 18432 = `LOGID_ATTCK_ANOMALY_TCP_UDP`.
@@ -51,7 +57,7 @@ LOGID message catalog, log views, forwarding (Syslog/FortiAnalyzer), GenAI loggi
 
 ## Retrieval
 
-Root index with filter: `query_root.py "<q>" 12 --product fortios --line 7.6x` (runbook in the router skill). Version-check hits (surface contains 8.0.x docs too).
+Root index with filter (pass the right line): `query_root.py "<q>" 12 --product fortios --line 7.6x` (7.6.x catalog) or `--line 8.0x` (8.0.2 catalog) (runbook in the router skill). Surfaces are version-isolated; sanity-check the `version` field on hits.
 
 ## Piece card / exam
 

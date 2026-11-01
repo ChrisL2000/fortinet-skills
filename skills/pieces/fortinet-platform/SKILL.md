@@ -1,6 +1,6 @@
 ---
 name: fortinet-platform
-version: 1.0.0
+version: 1.1.0
 author: ChrisMok, Hermes Agent
 license: MIT
 description: "FortiNet platform: CLI, system, VDOM, routing, REST API v2"
@@ -37,6 +37,25 @@ Source-verified for FortiOS 7.6.x (7.6.0-7.6.8) and 8.0.x (8.0.0-8.0.2) against 
 - **CLI additions (8.0.0):** NP7 `set session-acct-interval` range 1-600 s; `set sw-np-rate` / `sw-np-rate-unit {mbps|pps}` / `sw-np-rate-burst` (NP7-to-ISF bandwidth); `set poolname6` IPv6 pool in `config firewall proxy-policy`; `set ses-denied-multicast-traffic enable` in `config system settings`.
 - **8.0.2** adds a FortiLink split-interface LLDP neighbor-detection notice.
 - 8.0.0 supports FG-6000F/7000E/7000F (same hyperscale lineup as 7.6.x). WiFi-Controller AP support deltas: `fortinet-wireless` piece.
+
+### 8.0.x verified ports (FortiOS-8.0.0-Ports, corpus `fortios-8.0x/`)
+- **FGFM tunnel:** TCP 541 (IPv4), TCP 542 (IPv6) — FortiGate-to-FortiManager/FortiGate-to-FortiGate sync.
+- **NetFlow collector:** UDP 2055. **sFlow collector:** UDP 6343.
+- **FortiPortal:** TCP 443 (REST API) for API communication; email notification TCP 465.
+- **HA sync:** UDP 703. (Full table in the doc — version-check for other lines.)
+
+### 8.0.x MIB (FortiOS-8.0.0-FortiGate_MIB_information_overview, web-only doc, corpus `fortios-8.0x/`)
+- Fortinet enterprise OID: **1.3.6.1.4.1.12356** (`fortinet` MIB module for Fortinet network devices).
+- `fnCoreMib` = 1.3.6.1.4.1.12356.100; `fnSystem` = ...100.1.1; `fnSysSerial` = ...100.1.1.1 (device serial, same as ENTITY-MIB base entity); `fnMgmt` = ...100.1.2; `fnAdmin` = ...100.1.2.100.
+- MIB objects/OIDs may be unavailable per-model/version — the doc lists the reasons (web-crawl source; no PDF exists for this doc).
+
+### 8.0.x cellular/5G modem (5G_Device_Modem-80x + FortiOS-8.0.0-Modem_Firmware_Upgrade, corpus `fortios-8.0x/`)
+- Modem firmware upgrade (8.0.0+): `execute cellular-modem firmware-upgrade ftp [ImageFile] [FTP Server]:Port (username) (password)` / `... tftp [ImageFile] [TFTP Server]` / `... usb [ImageFile]` / `... management-station` — four transport variants, verified command syntax.
+- 5G device/modem doc covers 5G modem (SIM) support on FortiGate/FortiWiFi 5G models.
+
+### 8.0.x reference docs (corpus `fortios-8.0x/`)
+- `FortiOS-8.0.0-Best_Practices` — 8.0.0-era design/configuration best practices.
+- `FortiOS-8.0-Supported_RFCs` — RFC support matrix for the 8.0 line.
 
 ### Must-know 7.6.x changes (index — details in the owning piece)
 - **PDE (private data encryption), from 7.6.1:** `config system global > set private-data-encryption enable` now generates a *random* key — a config backed up with key A cannot be restored after the key is regenerated; FortiManager 7.6.3+ can manage PDE FortiGates but cannot import password-type objects. (platform — here)
@@ -150,12 +169,13 @@ FortiOS 7.6.7 (build 3704) supports:
 
 ## Retrieval (this piece's data)
 
-Root index (all surfaces, filter-enforced):
+Root index (all surfaces, filter-enforced — **pass the right line**):
 ```
-docker run --rm --mount type=bind,src=/home/chrismok/fortinet-corpus,dst=/home/chrismok/fortinet-corpus zeppo-rag:cli python3 /home/chrismok/fortinet-corpus/query_root.py "<question>" 12 --product fortios --line 7.6x
+docker run --rm --mount type=bind,src=/home/chrismok/fortinet-corpus,dst=/home/chrismok/fortinet-corpus zeppo-rag:cli python3 /home/chrismok/fortinet-corpus/query_root.py "<question>" 12 --product fortios --line 7.6x   # 7.6.x facts
+# ... --product fortios --line 8.0x   # 8.0.x facts
 ```
-Per-surface hybrid (diagnostics): `fortinet-corpus/fortios-7.6x/scripts/query.py`. Grep tools: `probe.py` / `ctx.py` in the surface `scripts/`.
-Version discipline: the surface also contains 8.0.x docs — check the `version` field on hits before citing for a 7.6.x environment.
+Per-surface hybrid (diagnostics): `fortinet-corpus/fortios-7.6x/scripts/query.py` / `fortinet-corpus/fortios-8.0x/scripts/query.py`. Grep tools: `probe.py` / `ctx.py` in each surface `scripts/`.
+Version discipline: surfaces are version-isolated (7.6.x docs in fortios-7.6x, 8.0.x docs in fortios-8.0x) — the `--line` filter is the primary version gate; still sanity-check the `version` field on hits.
 
 ## References (load on demand)
 
