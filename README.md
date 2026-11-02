@@ -4,11 +4,17 @@ A Hermes Agent skill family covering FortiNet products (FortiOS/FortiGate first 
 built as **two-axis model**:
 
 - **SURFACES** (physical axis): product × version line, each with its own documentation
-  collection. Current: `fortios-7.6x` (FortiOS 7.6.0–7.6.8, 43,528 vectors) and
-  `fortios-8.0x` (FortiOS 8.0.0–8.0.2, 25 docs, 37,220 vectors).
-- **PIECES** (logical axis): 12 knowledge domains — `platform`, `policy`, `vpn`,
-  `sdpwan`, `ha`, `wireless`, `proxy-ztna-casb`, `dlp`, `logging`, `auth`, `hardware`,
-  `ops`. Each piece is an independently updatable Hermes skill with CLI-verified content.
+  collection. Current: `fortios-7.6x` (FortiOS 7.6.0–7.6.8, 43,528 vectors),
+  `fortios-8.0x` (FortiOS 8.0.0–8.0.2, 25 docs, 37,220 vectors),
+  `fortimanager-7.6x` (8 docs, 3,408 vectors), `fortianalyzer-7.6x` (8 docs, 4,063
+  vectors), `fortiweb-7.6x` (8 docs incl. FortiWeb Manager, 6,850 vectors),
+  `fortigate-hardware-7.6x` (hyperscale FG-6000F/7000E/7000F + FG-1000F QSG, 1,251
+  vectors).
+- **PIECES** (logical axis): 15 knowledge domains — `platform`, `policy`, `vpn`,
+  `sdpwan`, `ha`, `wireless`, `proxy-ztna-casb`, `dlp`, `logging`, `auth`,
+  `hardware`, `ops` (FortiOS pieces) + `fortimanager`, `fortianalyzer`, `fortiweb`
+  (standalone-product pieces). Each piece is an independently updatable Hermes
+  skill with doc-verified content.
 
 The **root index** is a compiled artifact — one merged vector collection assembled from
 all surfaces/pieces (`compile_root.py`), never hand-edited. That is the "FINAL BOSS":
@@ -32,10 +38,14 @@ answer (skill core + retrieved context, both cited)
 
 ```
 skills/router/.../SKILL.md   router skill — routing table, runbook, exam state
-skills/pieces/fortinet-*/    12 piece skills (SKILL.md each)
+skills/pieces/fortinet-*/    15 piece skills (SKILL.md each)
 scripts/                     pipeline + eval scripts (see table below)
 eval/questions.jsonl         92-question 7.6x exam, piece-tagged, keypoint-graded
 eval/fortios-8.0x/           12-question 8.0x exam (platform/hardware/policy slices)
+eval/fortimanager-7.6x/      10-question FortiManager slice exam
+eval/fortianalyzer-7.6x/     10-question FortiAnalyzer slice exam
+eval/fortiweb-7.6x/          10-question FortiWeb slice exam
+eval/fortigate-hardware-7.6x/ 10-question hyperscale hardware slice exam
 PIPELINE.md                  corpus build pipeline (fetch -> extract -> embed -> compile)
 CORPUS.md                    surface conventions + self-improvement/update procedure
 ```
@@ -102,6 +112,12 @@ strict 40.2 → 59.8 → 63.0 → 59.8 → **60.9**; weighted 62.3 → 74.7 → 
 78.8 → **79.6**. The vpn piece is 100% strict in every round; platform 90%
 weighted in R5. Practical release gate met: weighted ≥75% × 3 consecutive
 (R3–R5) with strict ≥60% × 3.
+
+Slice exams (10 questions each, all accepted as documented R1+R2 in 2026-11):
+FortiManager 100%/97.5% both rounds; FortiAnalyzer 100%/100% both rounds;
+FortiWeb 90%/95.5% (R1) + 90%/94% (R2); FortiGate hardware 100%/101.2%* (R1) +
+100%/99.3% (R2) (*weighted >100% is a judge-verdict-count artifact; see
+`eval/README.md`).
 
 ## Self-improvement loop
 

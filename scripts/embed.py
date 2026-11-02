@@ -8,7 +8,7 @@ from sentence_transformers import SentenceTransformer
 
 ROOT = '/work'
 KB = os.path.join(ROOT, 'kb')
-COLLECTION = 'fortios76'
+COLLECTION = os.environ.get('EMBED_COLLECTION', 'fortios76')
 
 def main():
     t0 = time.time()

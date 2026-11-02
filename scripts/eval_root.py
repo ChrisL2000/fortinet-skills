@@ -11,8 +11,9 @@ Emulates what a live Hermes client does:
                     max_tokens 3000, 3 retries on GEN_FAIL.
 
 Usage:
-  eval_root.py [out.jsonl] [qids_csv]
-Defaults: out = <surface>/eval/answers_root_r1.jsonl, all questions.
+  eval_root.py [surface] [product] [line] [product_name] [qids_csv]
+Env: EVAL_K (retrieval top-k, default 16), EVAL_OUT (output suffix, e.g. _r2)
+Defaults: out = <surface>/eval/answers_root_<line>.jsonl, all questions.
 Resumes: ids already present in out.jsonl are skipped.
 
 Runs on the HOST (needs docker + :8081). The retrieval container uses a
@@ -23,8 +24,11 @@ import json, subprocess, urllib.request, sys, os, time
 
 CORPUS = '/home/chrismok/fortinet-corpus'
 SURFACE = os.path.join(CORPUS, sys.argv[1] if len(sys.argv) > 1 else 'fortios-7.6x')
-PRODUCT, LINE, K = (sys.argv[2] if len(sys.argv) > 2 else 'fortios',
-                    sys.argv[3] if len(sys.argv) > 3 else '7.6x', 16)
+PRODUCT, LINE = (sys.argv[2] if len(sys.argv) > 2 else 'fortios',
+                 sys.argv[3] if len(sys.argv) > 3 else '7.6x')
+# Tuning knobs (env, not argv — argv[5] is the qids filter):
+K = int(os.environ.get('EVAL_K', 16))                 # retrieval top-k
+OUT_SUFFIX = os.environ.get('EVAL_OUT', '')            # e.g. _r2
 PRODUCT_NAME = sys.argv[4] if len(sys.argv) > 4 else 'FortiGate'
 SKILLS = os.path.expanduser('~/.hermes/skills')
 ROUTER = os.path.join(SKILLS, 'hermes-it-infosec-fw-fortig-fortios-7-6-7', 'SKILL.md')
@@ -103,7 +107,7 @@ def generate(q, context, skill, model, max_tokens=3000, retries=3):
 
 
 def main():
-    out = os.path.join(SURFACE, 'eval', f'answers_root_{LINE}.jsonl')
+    out = os.path.join(SURFACE, 'eval', f'answers_root_{LINE}{OUT_SUFFIX}.jsonl')
     qs = [json.loads(l) for l in open(os.path.join(SURFACE, 'eval', 'questions.jsonl'))]
     if len(sys.argv) > 5:
         want = set(sys.argv[5].split(','))

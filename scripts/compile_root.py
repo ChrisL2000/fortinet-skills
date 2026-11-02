@@ -26,18 +26,22 @@ BATCH = 2000
 # ---- piece manifests: doc stem -> list of pieces claiming it ----
 n_pieces = 0
 doc_to_pieces = {}
+surf_piece_count = {}
 for mf in sorted(glob.glob(os.path.join(ROOT, "pieces", "*", "manifest.json"))):
     m = json.load(open(mf))
     n_pieces += 1
+    spc = m.get("surface", "")
+    surf_piece_count[spc] = surf_piece_count.get(spc, 0) + 1
     for d in m["docs"]:
         stem = d[:-4] if d.endswith(".pdf") else d
         doc_to_pieces.setdefault(stem, set()).add(m["piece"])
 
-def piece_of(doc):
+def piece_of(doc, surface=""):
     pcs = doc_to_pieces.get(doc)
     if not pcs:
         return "unassigned"
-    if len(pcs) == n_pieces:
+    count = surf_piece_count.get(surface, 0)
+    if count > 1 and len(pcs) == count:
         return "cross"
     return "/".join(sorted(pcs))
 
@@ -90,7 +94,7 @@ for cfg_path in surfaces:
             continue
         md = dict(mds[i] or {})
         doc = md.get("doc", "")
-        pc = piece_of(doc)
+        pc = piece_of(doc, surface)
         if pc == "unassigned":
             unassigned[doc] = unassigned.get(doc, 0) + 1
         md.update(surface=surface, product=product, line=line, piece=pc)

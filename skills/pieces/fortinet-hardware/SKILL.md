@@ -1,6 +1,6 @@
 ---
 name: fortinet-hardware
-version: 1.1.0
+version: 1.2.0
 author: ChrisMok, Hermes Agent
 license: MIT
 description: "FortiNet hardware: hyperscale FG, NPU, PPP pipeline"
@@ -9,8 +9,8 @@ metadata:
     piece: hardware
     surface: fortios-7.6x
     depends_on: [platform]
-    corpus: /home/chrismok/fortinet-corpus/fortios-7.6x
-    exam: 5/92 questions tagged piece=hardware
+    corpus: /home/chrismok/fortinet-corpus/fortios-7.6x (+ /home/chrismok/fortinet-corpus/fortigate-hardware-7.6x)
+    exam: 5/92 questions tagged piece=hardware + 10 questions fortigate-hardware-7.6x (hw-01..hw-10)
     piece_card: /home/chrismok/fortinet-corpus/pieces/hardware/PIECE.md
     tags: [fortios, hardware, hyperscale, npu, 6000f, 7000e, 7000f]
 ---
@@ -71,8 +71,40 @@ get system performance       # throughput, sessions, CPU
 ## Supported models
 
 - Full 7.6.7/7.6.8 model list: Release Notes §"Introduction and supported models" (platform piece has the 7.6.7 list). 7.6.8 adds AP411 + WiFi-7 AP updates (wireless piece).
+- **7.6.8 hyperscale lineups (verified, hardware surface):** 6000F guide covers **6500F/6501F/6300F/6301F/6001F (+ -DC variants)**; 7000E guide covers **7060E/7040E/7030E**; 7000F guide covers **7121F/7081F**; 1000F QSG covers **FG-1000F/FG-1001F**.
+- **Model gap (documented):** no separate 7.6.8 admin guides for 2000F/4000F/10000F or a 6000E in the hardware corpus.
 - 8.0.0 supports FG-6000F/7000E/7000F (same hyperscale lineup as 7.6.x).
 - **NOT in the 7.6.7 list:** 100E, 1000E, 3000E, 4000E series (discontinued).
+
+## FortiOS 7.6.8 hardware expansion surface (verified, `fortigate-hardware-7.6x` corpus: 4 docs, 452 pages, 1,251 chunks, collection `hw76`)
+
+Docs: FortiGate 6000F Admin 7.6.8 (128p), 7000E Admin 7.6.8 (157p), 7000F Admin 7.6.8 (156p), FG-1000F Series QSG (11p).
+
+### 6000F (7.6.8 admin guide, verified)
+- 3U 19-inch rackmount; all models share one front/back panel — differences are processing capacity only.
+- Front panel: **24x 1/10/25GigE SFP28 data ports (1-24, default 10Gbps)** + **4x 40/100GigE QSFP28 data ports (25-28, default 40Gbps)**; MGMT1/2 10/100/1000BASE-T; MGMT3 1/10G SFP+ (extra mgmt bandwidth, e.g. remote logging); HA1/HA2 1/10G SFP+; RJ-45 RS-232 console; 1 USB.
+- **Interface groups:** port1-24 in groups of four (1-4, 5-8, 9-12, 13-16, 17-20, 21-24); all ports in a group run at the same speed — changing one port's speed changes the whole group. Ports 25-28 are independent. Speed CLI: `config system interface > edit portN > set speed 25000full`.
+- **Data plane:** management board (MBD) + internal **FPCs** (NP6 + CP9). **6500F = ten FPCs; 6300F = six FPCs.** Two DP3 load balancers do session-aware load balancing across a **3.2Tbps integrated switch fabric**; NP6 = fastpath offload incl. IPsec encryption/decryption; CP9 = SSL VPN/Antivirus/Application Control/IPS acceleration.
+- **HA:** HA1/HA2 (heartbeat, session sync, mgmt between the two units; default 10Gbps, 1G not recommended); cluster = **two (and only two) units of the same model**.
+- **01F models (6001F/6501F/6301F):** two internal 1 TByte log disks in RAID-1.
+
+### 7000E (7.6.8 admin guide, verified)
+- Product = chassis (7060E/7040E/7030E) + **FIMs in slots 1-2** + **FPMs in slots 3+** (e.g. 7040E ships 2 FIMs + 2 FPMs). FIMs provide network connections + session-aware load balancing to FPMs.
+- Two different FIMs: install the **lower model number in slot 1** (e.g. FIM-7901E in slot 1, FIM-7904E in slot 2).
+- Manage via the **primary FIM (slot 1)** management IP; same FortiOS build + configuration on every FIM/FPM; changes sync to all modules.
+- Firmware upgrade from primary FIM: **all FIMs/FPMs upgrade in one step**, brief traffic interruption — quiet time.
+- Licensed/registered as **one product under the chassis serial number** (all FortiGuard/FortiCare licensing applies to the whole package).
+
+### 7000F (7.6.8 admin guide, verified)
+- **7121F:** 2 FIMs (slots 1-2) + up to **10 FPMs (slots 3-12)**. **7081F:** up to **6 FPMs (slots 3-8)**.
+- **NP7-accelerated session-aware load balancing** via the FIMs; FPMs carry **NP7 (CPU offload) + CP9 (security acceleration) + data interfaces**.
+- Connect via MGMT interface; **MGMT1 default IP of the FIM in slot 1 = 192.168.1.99**; config made from slot-1 FIM syncs to the other FIM + all FPMs.
+- Firmware upgrade: one step across all modules, brief interruption.
+- Typical deployment: **two chassis as an FGCP active-passive cluster**; manage via MGMT (logs you into the primary chassis); **upgrade-mode uninterruptible** → both chassis updated without interrupting data traffic.
+- Same single-package licensing/registration under the chassis serial number.
+
+### FG-1000F QSG (verified)
+- Covers **FG-1000F and FG-1001F**; default MGMT IP **192.168.1.99**; login **admin / blank password**; console port for CLI; static-IP example: management computer 192.168.1.1/24; setup locally (GUI/CLI) or via forticloud.com; register at support.fortinet.com.
 
 ## FortiGate 6000F (hyperscale) — verified management model (7.6.7 + 8.0.x)
 
@@ -93,8 +125,10 @@ Corpus docs: `text/fortigate-7000F-767.txt` (7.6.7) and `fortios-8.0x/text/forti
 
 ## Retrieval
 
-Root index with filter (pass the right line): `query_root.py "<q>" 12 --product fortios --line 7.6x` (7.6.x) or `--line 8.0x` (8.0.x) (runbook in the router skill). Surfaces are version-isolated; sanity-check the `version` field on hits.
+Root index with filter (pass the right line): `query_root.py "<q>" 12 --product fortios --line 7.6x` (7.6.x) or `--line 8.0x` (8.0.x) (runbook in the router skill). Surfaces are version-isolated; sanity-check the `version` field on hits. Hyperscale chassis details (6000F/7000E/7000F/1000F, 7.6.8) live in the `fortigate-hardware-7.6x` collection (`hw76`) inside the root index — query with the surface's own metadata values: `query_root.py "<q>" 12 --product fortigate --line hardware-7.6x` (the compile step splits the surface name, so the line value is `hardware-7.6x`, not `7.6x`).
 
 ## Piece card / exam
 
 Manifest + doc inventory: `/home/chrismok/fortinet-corpus/pieces/hardware/PIECE.md` + `manifest.json`. Exam slice: 7 questions in `fortinet-corpus/fortios-7.6x/eval/questions.jsonl` with `piece: hardware`.
+
+**Hardware surface exam** (`fortigate-hardware-7.6x/eval/`, hw-01..hw-10): R1 = **100% strict / 101.2% weighted** (101.2% is a judge artifact — 5 verdicts for hw-02's 4 key points, all PASS; hw-04 one minor partial), R2 = **100% strict / 99.3% weighted**. Gate met round 1; accepted as documented R1+R2 (2026-11-02).

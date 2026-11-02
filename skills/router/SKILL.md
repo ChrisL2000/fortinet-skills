@@ -4,13 +4,13 @@ version: 4.2.0
 author: ChrisMok, Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
-description: "FortiNet router: dispatches to 12 piece skills + corpus RAG"
-tags: [fortinet, fortios, fortigate, fortimanager, fortianalyzer, firewall, infosec, cli, rest-api, hardware, router]
+description: "FortiNet router: dispatches to 15 piece skills + corpus RAG"
+tags: [fortinet, fortios, fortigate, fortimanager, fortianalyzer, fortiweb, firewall, infosec, cli, rest-api, hardware, router]
 metadata:
   hermes:
     alias: hermes.it.infosec.fw.fortig.fortios.7.6.7
     trained: "2026-11-01"
-    family: fortinet (12 piece sub-skills + this router)
+    family: fortinet (15 piece sub-skills + this router)
     corpus_root: /home/chrismok/fortinet-corpus (one directory per surface build; each has a CORPUS.md card; root/kb = compiled cross-surface index)
 ---
 
@@ -49,6 +49,9 @@ as sibling dirs). Pieces = logical domains that span surfaces. Each piece is a r
 | `fortinet-auth` | Local/LDAP/RADIUS/SAML, FSSO (push semantics, group building), FortiToken/2FA | platform |
 | `fortinet-hardware` | Hyperscale 6000F/7000E/7000F, NPU + PPP pipeline, hardware diagnostics | platform |
 | `fortinet-ops` | Upgrades, firmware, release-notes reading, troubleshooting playbook, known issues | platform |
+| `fortinet-fortimanager` | FortiManager 7.6x: ADOMs, device/pkg onboarding, policy/pkg objects, workflow, FortiLink, FGM API | — (standalone product) |
+| `fortinet-fortianalyzer` | FortiAnalyzer 7.6x: analyzer vs collector modes, HA, Fabric, datasets, log forwarding, ports | — (standalone product) |
+| `fortinet-fortiweb` | FortiWeb 7.6x + FWM: operation modes, scan sequence, WAF features, HA, sizing, FWM device mgmt | — (standalone product) |
 
 CROSS-DOCS: the Admin Guides and CLI References are shared across pieces
 (piece="cross" in the piece manifests at `fortinet-corpus/pieces/`).
@@ -83,12 +86,19 @@ fortinet-corpus/
   PIPELINE.md            <- pipeline setup + full data contract (read this first)
   compile_root.py        <- compiles all surface collections -> root/kb (collection 'fortinet-root')
   query_root.py          <- queries the root index with a REQUIRED product/line filter
-  pieces/                <- 12 piece cards: PIECE.md + manifest.json (+ collection config, exam tags)
+  pieces/                <- piece cards: PIECE.md + manifest.json (+ collection config, exam tags); 15 pieces + cross;
+                             surface-scoped manifests (e.g. hardware-76x/) register a piece's docs for a new surface
   fortios-7.6x/          <- 7.6.x surface build (CORPUS.md card, pdfs/, text/, chunks.jsonl,
                              kb/ = chroma + collection.json, eval/, scripts/); 43,528 vectors
   fortios-8.0x/          <- 8.0.x surface build (same layout); 37,220 vectors, 25 docs
+  fortimanager-7.6x/     <- FortiManager 7.6x surface (8 docs, 3,408 chunks, collection fmgr76); accepted R1+R2
+  fortianalyzer-7.6x/    <- FortiAnalyzer 7.6x surface (8 docs, 4,063 chunks, collection fca76); accepted R1+R2
+  fortiweb-7.6x/         <- FortiWeb 7.6x + FWM surface (8 docs, 6,850 chunks, collection fw76)
+  fortigate-hardware-7.6x/ <- hyperscale hardware expansion (6000F/7000E/7000F admin guides + 1000F QSG;
+                             4 docs, 1,251 chunks, collection hw76)
+  pipeline/              <- canonical pipeline scripts (extract_pdfs.py, embed.py); mount at /opt/pipeline
   root/kb/               <- compiled cross-surface index (derived; rebuild anytime);
-                             80,748 vectors = both surfaces, IDs <surface>::<chunk>
+                             96,320 vectors = all surfaces, IDs <surface>::<chunk>
 ```
 
 **Query the root index** (all surfaces; filter is enforced unless
@@ -106,7 +116,7 @@ docker run --rm --mount type=bind,src=/home/chrismok/fortinet-corpus,dst=/home/c
 The root index stores chunk **text** (self-contained); each result carries
 `text` + metadata (`piece`, `version`, `doc`, `heading`, `page`, `score`).
 
-**Compile the root index** (after any surface changes; idempotent):
+**Compile the root index** (after any surface changes; idempotent; piece labels are per-surface-scoped — 'cross' means claimed by every piece of THAT surface, and only when that surface has >1 piece):
 
 ```
 docker run --rm --mount type=bind,src=/home/chrismok/fortinet-corpus,dst=/home/chrismok/fortinet-corpus \
@@ -132,10 +142,13 @@ Per-surface hybrid query (diagnostics):
    Reddit = field reports (never override official behavior). Bug IDs:
    release notes > PSIRT > community.
 6. **Stay in coverage.** Outside the verified set (other products:
-   FortiManager, FortiAnalyzer, FortiMail, FortiWeb, FortiSIEM,
-   FortiAuthenticator, FortiNAC, FortiClient, FortiSandbox; older lines
-   7.2.x/7.4.x): do NOT answer from memory — extend the corpus first or
-   fetch official docs live, and label the answer's product+version.
+   FortiMail, FortiSIEM, FortiAuthenticator, FortiNAC, FortiClient,
+   FortiSandbox; older lines 7.2.x/7.4.x): do NOT answer from memory —
+   extend the corpus first or fetch official docs live, and label the
+   answer's product+version. FortiManager/FortiAnalyzer/FortiWeb ARE in
+   the verified set (surfaces above) — dispatch to their pieces. FortiGate
+   models without a dedicated 7.6.8 guide (2000F/4000F/10000F/6000E)
+   remain a documented gap.
 
 Live doc sources: `https://docs.fortinet.com/document/fortigate/<ver>/<doc>`
 (landing page HTML exposes the PDF link); community search
@@ -151,10 +164,14 @@ schemas, flows, pitfalls). Pipeline scripts: this skill's `scripts/`
 
 Operating procedure:
 
+**Process contract (standing):** each surface runs fetch -> build -> exam -> bounded tune -> document -> release; proceed surface by surface WITHOUT review pauses; after the bounded tune, accept results as documented (residual failures stay, with their diagnosis); pick surface order from the evidence. **Acceptance (standing user rule):** when a NEW surface's round 1 already clears the gate (weighted >=75% AND strict >=60%), accept R1 as documented and run R2 ONLY as a stability confirmation — identical results expected, no tuning; record both rounds in the repo eval/README.md and the piece skill's exam section.
+
 1. **Ephemeral runtime.** Throwaway container from the `zeppo-rag:cli`
-   image (chromadb, sentence-transformers; **pymupdf is NOT in the
-   image** — `pip install -q pymupdf` inside the ephemeral container
-   before running extract_pdfs.py). Bind-mount the surface you're
+   image (chromadb, sentence-transformers; **pymupdf is NOT in
+   zeppo-rag:cli** — build the temp image `zeppo-rag:extract` once:
+   `FROM zeppo-rag:cli` + `pip install pymupdf`; delete it when the
+   whole pipeline is done). Canonical pipeline scripts live in
+   `fortinet-corpus/pipeline/` (mount at /opt/pipeline, ro). Bind-mount the surface you're
    working on at the path the script hardcodes (extract_pdfs.py uses
    `ROOT=/work` — mount the SURFACE dir at /work, not the corpus root);
    no published ports; kill it when done (`docker ps` diff = 0). Never touch `zeppo-rag-cli` or `/home/zeppo`;
@@ -170,11 +187,17 @@ Operating procedure:
    from the OLD surface's Chroma collection, and recompile the root in
    full — the same doc embedded under two surfaces duplicates vectors in
    the root.
-3. **Fetch official docs** (docs.fortinet.com PDF variants; Fortinet S3
+3. **Fetch official docs** (docs.fortinet.com PDF variants; FortiNet S3
    fallback; some 8.0.0 S3 objects 403 -> use the 8.0.2 variant). The doc
    page HTML carries the direct PDF link — regex
    `https://fortinetweb[^"']*.pdf`; the product page
-   `/product/fortigate/<train>` is the full doc catalog. Some docs are
+   `/product/fortigate/<train>` is the full doc catalog. Doc LANDING pages
+   serve fully with plain `curl` (HTTP 200 + complete HTML incl. the S3 link)
+   — no browser needed; JS-rendered BUNDLE pages return empty HTML via curl.
+   Product-line pages (`/document/fortigate/hardware/`) list every doc slug
+   as hrefs (grep them to enumerate a line's catalog); QSGs and other
+   line-level docs live under the LINE path with NO version segment
+   (`/document/fortigate/hardware/<slug>`).
    **web-only** (no PDF link in any version — e.g. FortiGate MIB info
    overview): crawl the hub page plus all chapter sub-pages
    (`/document/fortigate/<ver>/<slug>/<chapter-id>/<chapter-slug>`),
@@ -190,7 +213,7 @@ Operating procedure:
    **embed only NEW chunks or rebuild for a full retrain.)** The surface
    `embed.py` MUST also write `kb/collection.json` (`{"name":
    "<collection>","model":"MiniLM-L6-v2","dim":384}`) — without it
-   `compile_root.py` silently skips the surface.
+   `compile_root.py` silently skips the surface. The canonical `pipeline/embed.py` takes the collection name from env `EMBED_COLLECTION` (default fortios76) and does NOT write collection.json — create `kb/collection.json` yourself per surface.
 6. **Rebuild the keyword index** (`rm logs/inverted_index.json` — it
    rebuilds on first query; a stale index silently broke an eval round
    before).
@@ -205,9 +228,12 @@ Operating procedure:
    >=90% for two consecutive rounds.
    Live-path validation (mirrors how a client answers: root RAG +
    router + the question's piece skill as SKILL CORE): `eval_root.py`
-   → `score_root.py` (per-piece breakdown). Round files
+   `score_root.py` (per-piece breakdown). Round files
    `eval/answers_root_rN.jsonl` / `eval/scores_root_rN.jsonl` — never
-   mix rounds in one file.
+   mix rounds in one file. `score_root.py`'s surface argument defaults to
+   7.6x and is REQUIRED for any other surface — it loads
+   `<surface>/eval/questions.jsonl`; omitting it for another surface fails
+   with a KeyError on the first question ID, not a file error.
 9. **Fold in.** Generation gap -> expand the owning PIECE skill with the
    source-verified content (the pieces are the unit of work, not this
    router). KP/scope error -> fix `questions.jsonl` only after
@@ -216,10 +242,13 @@ Operating procedure:
     change — the root is derived data; never edit it by hand.
 11. **Teardown.** Kill the temp container; `docker ps` diff = 0.
 
-Known pitfalls (all hit in production): stale inverted index -> silent
+Known pitfalls (all hit in production): `file` page counts are WRONG on FortiNet PDFs (reported 4 pages for a 364-page CLI Reference) — verify with pymupdf before trusting a download; stale inverted index -> silent
 bad retrieval; missing `kb/collection.json` -> `compile_root.py`
 silently skips a surface (root count looks fine but one surface is
-absent — always verify per-surface lines in the compile log); thinking model without `enable_thinking: false` ->
+absent — always verify per-surface lines in the compile log); a
+MISSING COLLECTION (embed never ran) is a harder failure: `compile_root.py`
+crashes MID-compile after adding earlier surfaces — finish every surface's
+embed before compiling; thinking model without `enable_thinking: false` ->
 GEN_FAILs; `scores.jsonl` not archived -> corrupt fresh scores; Chroma
 bulk `get()` on >~900 IDs -> SQLite variable limit (batch;
 `compile_root.py` already does); chromadb `query()`/`get()` return
@@ -247,12 +276,24 @@ plus the 8.0x slice exam (12 questions, `fortios-8.0x/eval/questions.jsonl`:
 6 platform / 4 hardware / 2 policy; all "enumerate N verified 8.0.x facts" style):
 - **Surface exam** (legacy, `run_eval.py` against the surface collection): best 76.1% (70/92).
 - **Root exam 7.6x** (live-client path, `eval_root.py`): strict R1 40.2 -> R2 59.8 -> R3 63.0 -> R4 59.8 -> **R5 60.9**; weighted 62.3 -> 74.7 -> 78.0 -> 78.8 -> **79.6** (>=50% threshold: 90.2% in R5). vpn 9/9 (100%) all 5 rounds; platform 90%, auth 92% weighted in R5. R2-R5 plateau = judge strictness + sampling; content enrichment exhausted. **Practical release gate MET** (weighted >=75% x3, strict >=60% x3).
-- **Root exam 8.0x** (`eval_root.py fortios-8.0x fortios 8.0x FortiGate`): **R1 = strict 33.3%, weighted 63.0%** (>=50%: 9/12). Failure mode DIFFERENT from 7.6x: the 10 non-zero questions average ~78% of their key points; the two zero scores (r80-01 8.0.0 network new features, r80-05 8.0.1 NP7 new features) are RETRIEVAL RANKING misses — the exact "What's new for X" chunks exist in the corpus (e.g. c036321 in fortios-hardware-acceleration-802) but do not rank in top-16 for "enumerate new features in version X" questions. Fix candidates: bigger K for eval, or question rephrasing toward the section name.
-`eval_root.py` / `score_root.py` are parameterized: `<surface> <product> <line> <product_name>` / `<answers> <scores> [surface]` (defaults = 7.6x).
+- **Root exam 8.0x** (`eval_root.py fortios-8.0x fortios 8.0x FortiGate`): **R1 = strict 33.3%, weighted 63.0%** (>=50%: 9/12). Failure mode DIFFERENT from 7.6x: the 10 non-zero questions average ~78% of their key points; the two zero scores (r80-01 8.0.0 network new features, r80-05 8.0.1 NP7 new features) are RETRIEVAL RANKING misses — the exact "What's new for X" chunks exist in the corpus (e.g. c036321 in fortios-hardware-acceleration-802) but do not rank in top-16 for "enumerate new features in version X" questions. Diagnosis (target-chunk rank probes at K=48/64): r80-05's target c036321 ranks 28 — fixed by K=32 via EVAL_K; r80-01's NFG network-feature chunks rank past 48 and no tested rephrase (original, guide-name, network-chapter) pulls them in — Overview/TOC chunks dominate vector similarity for "enumerate new features" questions, so vector-only retrieval cannot reach them; r80-01 accepted as a documented retrieval limitation (real fix: hybrid keyword+vector). R2 = K=32 with questions unchanged (keeps R1/R2 comparable).
+`eval_root.py` / `score_root.py` are parameterized: `<surface> <product> <line> <product_name>` / `<answers> <scores> [surface]` (defaults = 7.6x). `eval_root.py` also reads env `EVAL_K` (retrieval K, default 16) and `EVAL_OUT` (round suffix, e.g. `_r2`) — argv[5] is the qids filter, so K cannot be an arg.
+
+**Slice exams (10 questions each, accepted as documented R1+R2, 2026-11-02):**
+- **fortimanager-7.6x** (`eval_root.py fortimanager-7.6x fortimanager 7.6x FortiManager`): R1 = R2 = **100% strict / 97.5% weighted**; fmg-09 only partial (2/4 pts). Gate met round 1; no tuning.
+- **fortianalyzer-7.6x** (`eval_root.py fortianalyzer-7.6x fortianalyzer 7.6x FortiAnalyzer`): R1 = R2 = **100% strict / 100% weighted**. Perfect both rounds; no tuning.
+- **fortiweb-7.6x** (`eval_root.py fortiweb-7.6x fortiweb 7.6x FortiWeb`): R1 **90% strict / 95.5% weighted**, R2 **90% / 94%** (stable); fw-02 (scan-sequence ordering) the only partial in either round. Gate met round 1; no tuning.
+- **fortigate-hardware-7.6x** (`eval_root.py fortigate-hardware-7.6x fortigate hardware-7.6x FortiGate` — note the `hardware-7.6x` line value, see filter note above): R1 **100% strict / 101.2% weighted** (101.2% is a judge artifact — 5 verdicts for hw-02's 4 kps; effectively ~100%; hw-04 one minor partial), R2 **100% / 99.3%** (stable). Gate met round 1; no tuning.
 
 ## Release
-Public release: `github.com/ChrisL2000/fortinet-skills` (tag v4.2.0, 2026-11-01) — router + 12 piece
+Public release: `github.com/ChrisL2000/fortinet-skills` (tag v4.2.0) — router + piece
 skills, all pipeline scripts, exams, README. v4.2.0 adds the fortios-8.0x surface
 (25 docs; 7.6x/8.0x version isolation) + parameterized eval/score scripts. Vendor doc text and
 vector stores are never shipped (proprietary, data stays on-host); the repo README documents the
 build-from-scratch path. Re-sync the repo when the family next changes.
+v4.3.0 (in preparation): fortimanager-7.6x (accepted R1+R2, 100% strict/97.5% weighted),
+fortianalyzer-7.6x (accepted R1+R2, 100%/100%), fortiweb-7.6x (accepted R1+R2,
+90%/95.5% + 90%/94%), fortigate-hardware-7.6x (6000F/7000E/7000F + 1000F QSG; accepted R1+R2,
+100% strict / 101.2%* + 99.3% weighted) + pieces 13-15 + hardware v1.2.0;
+per-surface piece scoping; EVAL_K/EVAL_OUT. Tag after HW R2 lands + temp-artifact
+cleanup (zeppo-rag:extract image, scratch URL dirs).
