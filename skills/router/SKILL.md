@@ -286,14 +286,14 @@ plus the 8.0x slice exam (12 questions, `fortios-8.0x/eval/questions.jsonl`:
 - **fortigate-hardware-7.6x** (`eval_root.py fortigate-hardware-7.6x fortigate hardware-7.6x FortiGate` — note the `hardware-7.6x` line value, see filter note above): R1 **100% strict / 101.2% weighted** (101.2% is a judge artifact — 5 verdicts for hw-02's 4 kps; effectively ~100%; hw-04 one minor partial), R2 **100% / 99.3%** (stable). Gate met round 1; no tuning.
 
 ## Release
-Public release: `github.com/ChrisL2000/fortinet-skills` (tag v4.2.0) — router + piece
-skills, all pipeline scripts, exams, README. v4.2.0 adds the fortios-8.0x surface
-(25 docs; 7.6x/8.0x version isolation) + parameterized eval/score scripts. Vendor doc text and
-vector stores are never shipped (proprietary, data stays on-host); the repo README documents the
-build-from-scratch path. Re-sync the repo when the family next changes.
-v4.3.0 (in preparation): fortimanager-7.6x (accepted R1+R2, 100% strict/97.5% weighted),
-fortianalyzer-7.6x (accepted R1+R2, 100%/100%), fortiweb-7.6x (accepted R1+R2,
-90%/95.5% + 90%/94%), fortigate-hardware-7.6x (6000F/7000E/7000F + 1000F QSG; accepted R1+R2,
-100% strict / 101.2%* + 99.3% weighted) + pieces 13-15 + hardware v1.2.0;
-per-surface piece scoping; EVAL_K/EVAL_OUT. Tag after HW R2 lands + temp-artifact
-cleanup (zeppo-rag:extract image, scratch URL dirs).
+Public release: `github.com/ChrisL2000/fortinet-skills` (tag **v4.3.0**, SHIPPED
+2026-11-02) — router + 15 piece skills, all pipeline scripts, 6 exam sets,
+README. v4.3.0 adds the four product surfaces (fortimanager-7.6x, accepted
+R1+R2 100%/97.5%; fortianalyzer-7.6x, accepted R1+R2 100%/100%; fortiweb-7.6x,
+accepted R1+R2 90%/95.5%+94%; fortigate-hardware-7.6x, accepted R1+R2 100%/
+101.2%*+99.3%), pieces 13-15 (fortimanager/fortianalyzer/fortiweb),
+fortinet-hardware v1.2.0 (7.6.8 hyperscale lineups + hw76 query filter),
+per-surface piece scoping, EVAL_K/EVAL_OUT. Root index: 96,320 vectors / 16
+pieces. Temp artifacts cleaned post-release (zeppo-rag:extract image,
+scratch URL dirs); docker ps = 6-container baseline. Re-sync the repo when
+the family next changes.
